@@ -12,12 +12,12 @@ from pathlib import Path
 # REMARK: The `base_url` must not have whitespaces, or it is `split` on command execution.
 base_url = "localhost:50021"
 
-
 # sequence editor
 se = bpy.context.scene.sequence_editor
 
+
 # text -> json file path
-def query_json(speaker, text):
+def voicevox_query_json(speaker, text):
   # create temporary text file (to not consider URL encoding by ourselves)
   text_file = tempfile.NamedTemporaryFile('w', delete=False, suffix=".txt")
   text_file.write(text)
@@ -37,7 +37,7 @@ def query_json(speaker, text):
 
 
 # json file path -> audio file path
-def query_audio(speaker, json_path):
+def voicevox_query_audio(speaker, json_path):
   header = "Content-Type: application/json"
   url = f"{base_url}/synthesis?speaker={speaker}"
   cmd = ["curl", "-s", "-H", header, "-X", "POST", "-d", f"@{json_path}", url]
@@ -56,13 +56,13 @@ def query_audio(speaker, json_path):
 
 
 # `frame_start`: int
-def query_at_once(name, speaker, text, channel, frame_start):
-  json_path = query_json(speaker, text)
+def insert_voice_audio(name, speaker, text, channel, frame_start):
+  json_path = voicevox_query_json(speaker, text)
   # TODO: proper null check
   if json_path == "":
     return
 
-  audio_path = query_audio(speaker, json_path)
+  audio_path = voicevox_query_audio(speaker, json_path)
 
   # sound sequence
   ss = se.sequences.new_sound(name, audio_path, channel, frame_start)
@@ -72,7 +72,7 @@ def main():
   # text sequences:
   for s in filter(lambda s: s.select and s.type == 'TEXT', se.sequences_all):
     print(s.text, s.frame_start, s.frame_duration)
-    query_at_once("test-audio.wav", 0, s.text, 3, int(s.frame_start))
+    insert_voice_audio("test-audio.wav", 0, s.text, 3, int(s.frame_start))
 
 
 main()
