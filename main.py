@@ -4,12 +4,10 @@ import tempfile
 from pathlib import Path
 
 
-# fps = bpy.context.scene.render.fps
+# Change this directory to save VOICEVOX audio files
+tmp_dir = "/tmp"
 
-# base_tmp_dir = Path("/tmp/blender-voicevox-speech")
-# base_tmp_dir.mkdir(exist_ok=True)
-
-# REMARK: The `base_url` must not have whitespaces, or it is `split` on command execution.
+# VOICEVOX local server URL
 base_url = "localhost:50021"
 
 # sequence editor
@@ -19,7 +17,7 @@ se = bpy.context.scene.sequence_editor
 # text -> json file path
 def voicevox_query_json(speaker, text):
   # create temporary text file (to not consider URL encoding by ourselves)
-  text_file = tempfile.NamedTemporaryFile('w', delete=False, suffix=".txt")
+  text_file = tempfile.NamedTemporaryFile('w', delete=False, dir=tmp_dir, suffix=".txt")
   text_file.write(text)
   text_file.close()
 
@@ -29,7 +27,7 @@ def voicevox_query_json(speaker, text):
 
   # run
   res = subprocess.run(cmd, capture_output=True)
-  json_file = tempfile.NamedTemporaryFile('w', delete=False, suffix=".json")
+  json_file = tempfile.NamedTemporaryFile('w', delete=False, dir=tmp_dir, suffix=".json")
   json_file.write(res.stdout.decode())
   json_file.close()
 
@@ -48,7 +46,7 @@ def voicevox_query_audio(speaker, json_path):
     print("error on VOICEVOX JSON query:", res.returncode, ":", cmd)
     return ""
 
-  audio_file = tempfile.NamedTemporaryFile('wb', delete=False, suffix=".wav")
+  audio_file = tempfile.NamedTemporaryFile('wb', delete=False, dir=tmp_dir, suffix=".wav")
   audio_file.write(res.stdout)
   audio_file.close()
 
@@ -69,14 +67,21 @@ def insert_voice_audio(name, speaker, text, channel, frame_start):
 
 
 def main():
-  # text sequences:
+  # 玄野武宏
+  # See also: http://127.0.0.1:50021/docs/speakers
+  speaker = 11
+
+  # target audio output channel
+  channel = 4
+
+  # iterate through selected text sequences:
   for s in filter(lambda s: s.select and s.type == 'TEXT', se.sequences_all):
     print(s.text, s.frame_start, s.frame_duration)
-    insert_voice_audio("test-audio.wav", 0, s.text, 3, int(s.frame_start))
+    # insert VOICEVOX audio
+    insert_voice_audio("test-audio.wav", speaker, s.text, channel, int(s.frame_start))
 
+  print("--> done voicevox conversion")
 
 main()
 
-
-# TODO: Is it OK to place the audio files in the temporary directory?
 
